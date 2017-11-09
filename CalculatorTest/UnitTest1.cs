@@ -6,7 +6,19 @@ namespace CalculatorTest
     [TestClass]
     public class CalculatorTests
     {
-        ExpressionCalculator calc = new ExpressionCalculator();
+        ExpressionCalculator calc;
+
+        [TestInitialize]
+        public void Init()
+        {
+            OperatorsList<double> operators = new OperatorsList<double>();
+            operators.Add('+', new DoubleAdditionOperator(OperatorsPriority.Low));
+            operators.Add('-', new DoubleSubstractOperator(OperatorsPriority.Low));
+            operators.Add('*', new DoubleMultiplicationOperator(OperatorsPriority.Medium));
+            operators.Add('/', new DoubleDivisionOperator(OperatorsPriority.Medium));
+
+           calc = new ExpressionCalculator(operators);
+        }
 
         [TestMethod]
         public void Solve_2Plus2_4Returned()

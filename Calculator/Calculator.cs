@@ -10,52 +10,45 @@ namespace Solver
     public interface IOperator<T>
     {
         T Calculate(T first, T second);
+        OperatorsPriority Priority { get; }
     }
 
-    public abstract class AbstractOperation: IOperator<double>
+    public abstract class DoubleAbstractOperation : IOperator<double>
     {
         public OperatorsPriority Priority { get; }
 
-        public AbstractOperation(OperatorsPriority priority) => Priority = priority;
+        public DoubleAbstractOperation(OperatorsPriority priority) => Priority = priority;
 
         public abstract double Calculate(double first, double second);
 
     }
 
-    public class AdditionOperator : IOperator<double>
+    public class DoubleAdditionOperator : DoubleAbstractOperation
     {
-        public OperatorsPriority Priority { get; }
+        public DoubleAdditionOperator(OperatorsPriority priority): base(priority) { }
 
-        public AdditionOperator() => Priority = OperatorsPriority.Low;
-
-        public double Calculate(double first, double second) => first + second;
+        public override double Calculate(double first, double second) => first + second;
     }
 
-    public class SubstractOperator : IOperator<double>
+    public class DoubleSubstractOperator : DoubleAbstractOperation
     {
-        public OperatorsPriority Priority { get; }
+        public DoubleSubstractOperator(OperatorsPriority priority) : base(priority) { }
 
-        public SubstractOperator() => Priority = OperatorsPriority.Low;
-
-        public double Calculate(double first, double second) => first - second;
+        public override double Calculate(double first, double second) => first - second;
     }
 
-    public class MultiplicationOperator : IOperator<double>
+    public class DoubleMultiplicationOperator : DoubleAbstractOperation
     {
-        public OperatorsPriority Priority { get; }
+        public DoubleMultiplicationOperator(OperatorsPriority priority) : base(priority) { }
 
-        public MultiplicationOperator() => Priority = OperatorsPriority.Medium;
-
-        public double Calculate(double first, double second) => first * second;
+        public override double Calculate(double first, double second) => first * second;
     }
 
-    public class DivisionOperator : IOperator<double>
+    public class DoubleDivisionOperator : DoubleAbstractOperation
     {
-        public OperatorsPriority Priority { get; }
+        public DoubleDivisionOperator(OperatorsPriority priority) : base(priority) { }
 
-        public DivisionOperator() => Priority = OperatorsPriority.Medium;
-
-        public double Calculate(double first, double second)
+        public override double Calculate(double first, double second)
         {
             if (double.Equals(second, 0.0D))
                 throw new DivideByZeroException();
@@ -63,67 +56,50 @@ namespace Solver
         }
     }
 
-    public class ArithmeticalOperators
+    public interface IOperatorsList<T>
     {
-        private Dictionary<char, IOperator<double>> _operators = new Dictionary<char, IOperator<double>>();
+        void Add(char symbol, IOperator<T> new_operator);
+        bool IsOperator(char c);
+        IOperator<T> GetOperator(char c);
+    }
 
-        public void Add(char symbol, IOperator<double> new_operator)
+    public class OperatorsList<T>: IOperatorsList<T>
+    {
+        private Dictionary<char, IOperator<T>> _operators = new Dictionary<char, IOperator<T>>();
+
+        public void Add(char symbol, IOperator<T> new_operator)
         {
             _operators.Add(symbol, new_operator);
         }
 
         public bool IsOperator(char c) => _operators.ContainsKey(c);
 
-        public IOperator<double> this[char c] { get => _operators[c]; }
-
-    }
-#endregion Operators
-
-    public class ExpressionCalculator
-    {
-        private ArithmeticalOperators _operators = new ArithmeticalOperators();
-
-        public ExpressionCalculator()
+        public IOperator<T> GetOperator(char c)
         {
-            _operators.Add('+', new AdditionOperator());
-            _operators.Add('-', new SubstractOperator());
-            _operators.Add('*', new MultiplicationOperator());
-            _operators.Add('/', new DivisionOperator());
+            return _operators[c];
         }
+    }
+    #endregion Operators
 
-        private int GetOperatorPriority(char c)
+#region Calculators
+
+    public interface IExpressionCalculator<T>
+    {
+        T Solve(string expression);
+    }
+
+    public class ExpressionCalculator: IExpressionCalculator<double>
+    {
+        private IOperatorsList<double> _operators;
+
+        public ExpressionCalculator(IOperatorsList<double> new_operators)
         {
-            int operatorPriority = 0;
-
-            switch(c)
-            {
-                case '*':
-                    operatorPriority = 4;
-                    break;
-                case '/':
-                    operatorPriority = 4;
-                    break;
-                case '+':
-                    operatorPriority = 2;
-                    break;
-                case '-':
-                    operatorPriority = 3;
-                    break;
-                default:
-                    break;
-            }
-
-            return operatorPriority;
+            _operators = new_operators;
         }
 
         private string CleanExpression(string input)
         {
             return input;
-        }
-
-        private bool IsOperator(char c)
-        {
-            return "+-*/".Contains(c.ToString());
         }
 
         private bool IsDelimeter(char c)
@@ -153,9 +129,11 @@ namespace Solver
 
                 if(_operators.IsOperator(input[i]) )
                 {
-                    if(operators.Count > 0)
+                    IOperator<double> op = _operators.GetOperator(input[i]);
+
+                    if (operators.Count > 0)
                     {
-                        if( GetOperatorPriority(input[i]) <= GetOperatorPriority(operators.Peek()))
+                        if( op.Priority <= _operators.GetOperator(operators.Peek()).Priority )
                         {
                             rpnString += operators.Pop().ToString() + " ";
                         }
@@ -197,8 +175,8 @@ namespace Solver
                 if( _operators.IsOperator(expression[i]) )
                 {
                     double second = solve.Pop(), first = solve.Pop();
-
-                    result = _operators[expression[i]].Calculate(first, second);
+                    IOperator<double> op = _operators.GetOperator(expression[i]);
+                    result = op.Calculate(first, second);
 
                     solve.Push(result);
                 }
@@ -207,4 +185,5 @@ namespace Solver
             return solve.Peek();
         }
     }
+#endregion Calculators
 }

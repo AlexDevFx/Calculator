@@ -8,7 +8,14 @@ namespace Calculator
         static void Main(string[] args)
         {
             string mathExpression = Console.ReadLine();
-            ExpressionCalculator calculator = new ExpressionCalculator();
+            OperatorsList<double> operators = new OperatorsList<double>();
+
+            operators.Add('+', new DoubleAdditionOperator(OperatorsPriority.Low));
+            operators.Add('-', new DoubleSubstractOperator(OperatorsPriority.Low));
+            operators.Add('*', new DoubleMultiplicationOperator(OperatorsPriority.Medium));
+            operators.Add('/', new DoubleDivisionOperator(OperatorsPriority.Medium));
+
+            ExpressionCalculator calculator = new ExpressionCalculator(operators);
             Console.WriteLine(calculator.ConvertToRpn(mathExpression));
             Console.WriteLine(calculator.Solve(mathExpression));
             Console.ReadKey();
