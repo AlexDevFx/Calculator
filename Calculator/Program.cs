@@ -1,4 +1,5 @@
 ﻿using System;
+using Solver;
 
 namespace Calculator
 {
@@ -6,7 +7,12 @@ namespace Calculator
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Hello World!");
+            string mathExpression = Console.ReadLine();
+            ExpressionCalculator calculator = new ExpressionCalculator();
+            Console.WriteLine(calculator.ConvertToRpn(mathExpression));
+            Console.WriteLine(calculator.Solve(mathExpression));
+            Console.ReadKey();
         }
+
     }
 }
