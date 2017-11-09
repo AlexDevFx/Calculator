@@ -91,67 +91,83 @@ namespace Solver
     public class ExpressionCalculator: IExpressionCalculator<double>
     {
         private IOperatorsList<double> _operators;
+        private const string delimeter = " ";
 
-        public ExpressionCalculator(IOperatorsList<double> new_operators)
+        public ExpressionCalculator(IOperatorsList<double> new_operators) => _operators = new_operators;
+
+        private string CleanExpression(string input) => input.Replace(" ", string.Empty);
+
+        private bool IsDelimeter(char c) => delimeter.IndexOf(c) != -1;
+
+        private string AddDelimeter(string s) => s += delimeter;
+
+        private bool IsDigit(char c) => !_operators.IsOperator(c) && !IsDelimeter(c);
+
+        private string ReadDigits(ref int i, string string_for_read)
         {
-            _operators = new_operators;
+            string digits = string.Empty;
+
+            while(i < string_for_read.Length && IsDigit(string_for_read[i]) )
+            {
+                digits += string_for_read[i];
+                i++;
+            }
+
+            return digits;
         }
 
-        private string CleanExpression(string input)
+        private void PlaceOperatorsAccordingPriority(char current_operator, Stack<char> operators_stack, ref string out_string)
         {
-            return input;
+            if (operators_stack.Count > 0)
+            {
+                IOperator<double> current = _operators.GetOperator(current_operator);
+                IOperator<double> previous = _operators.GetOperator(operators_stack.Peek());
+
+                if (current.Priority <= previous.Priority)
+                {
+                    out_string += AddDelimeter(operators_stack.Pop().ToString());
+                }
+            }
         }
 
-        private bool IsDelimeter(char c)
+        private double CalculateOperator(char operator_symbol, Stack<double> operands)
         {
-            if ((" =".IndexOf(c) != -1))
-                return true;
-            return false;
+            double second = operands.Pop(), first = operands.Pop();
+            double result = 0.0 ;
+            IOperator<double> op = _operators.GetOperator(operator_symbol);
+            result = op.Calculate(first, second);
+            return result;
         }
 
-        public string ConvertToRpn(string input)
+        private string ConvertToRpn(string input)
         {
             string rpnString = string.Empty;
-            Stack<char> operators = new Stack<char>();
+            Stack<char> operatorsStack = new Stack<char>();
 
             for (int i = 0; i < input.Length; i++)
             {
                 if (char.IsDigit(input[i]))
                 {
-                    while (i < input.Length && !_operators.IsOperator(input[i]) && !IsDelimeter(input[i]) )
-                    {
-                        rpnString += input[i];
-                        i++;
-                    }
-                    rpnString += " ";
+                    rpnString += ReadDigits(ref i, input);
+                    rpnString = AddDelimeter(rpnString);
                     i--;
                 }
 
                 if(_operators.IsOperator(input[i]) )
                 {
-                    IOperator<double> op = _operators.GetOperator(input[i]);
-
-                    if (operators.Count > 0)
-                    {
-                        if( op.Priority <= _operators.GetOperator(operators.Peek()).Priority )
-                        {
-                            rpnString += operators.Pop().ToString() + " ";
-                        }
-                    }
-
-                    operators.Push(input[i]);
+                    PlaceOperatorsAccordingPriority(input[i], operatorsStack, ref rpnString);
+                    operatorsStack.Push(input[i]);
                 }
             }
 
-            while (operators.Count > 0)
-                rpnString += operators.Pop() + " ";
+            while (operatorsStack.Count > 0)
+                rpnString += AddDelimeter(operatorsStack.Pop().ToString());
 
             return rpnString;
         }
 
         public double Solve(string input)
         {
-            double result = 0.0;
             string expression = CleanExpression(input);
             expression = ConvertToRpn(expression);
             Stack<double> solve = new Stack<double>();
@@ -160,25 +176,14 @@ namespace Solver
             {
                 if( char.IsDigit(expression[i]) )
                 {
-                    string number = string.Empty;
-
-                    while( i < expression.Length && !_operators.IsOperator(expression[i]) && !IsDelimeter(expression[i]) )
-                    {
-                        number += expression[i];
-                        i++;
-                    }
-
+                    string number = ReadDigits(ref i, expression);
                     solve.Push(double.Parse(number));
                     i--;
                 }
 
                 if( _operators.IsOperator(expression[i]) )
                 {
-                    double second = solve.Pop(), first = solve.Pop();
-                    IOperator<double> op = _operators.GetOperator(expression[i]);
-                    result = op.Calculate(first, second);
-
-                    solve.Push(result);
+                    solve.Push(CalculateOperator(expression[i], solve));
                 }
             }
 

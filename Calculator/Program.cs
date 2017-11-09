@@ -16,7 +16,6 @@ namespace Calculator
             operators.Add('/', new DoubleDivisionOperator(OperatorsPriority.Medium));
 
             ExpressionCalculator calculator = new ExpressionCalculator(operators);
-            Console.WriteLine(calculator.ConvertToRpn(mathExpression));
             Console.WriteLine(calculator.Solve(mathExpression));
             Console.ReadKey();
         }
